@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Extra Life Widget</title>
+		<style type="text/css">
+			#message-container {
+				width: 400px;
+				height: 200px;
+				transition: background-color 250ms;
+			}
+
+			#message-content {
+				display: block;
+				margin-left: auto; 
+				margin-right: auto;
+				position: relative;
+				top: 50%;
+				transform: translateY(-50%),
+				transition: font-size 250ms;;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="message-container">
+			<span id="message-content"></span>
+		</div>
+
+		<script src="js/support/require.js"></script>
+		<script>
+			require.config({
+				baseUrl: "js",
+				urlArgs: "_c=" + Date.now()
+			});
+
+			require(["app"], function appLoaded(app) { });
+		</script>
+	</body>
+</html>
