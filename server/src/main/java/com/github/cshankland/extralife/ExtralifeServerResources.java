@@ -2,6 +2,7 @@ package com.github.cshankland.extralife;
 
 import com.github.cshankland.extralife.extralife.ExtraLife;
 import com.github.cshankland.extralife.service.DonationService;
+import com.github.cshankland.extralife.service.TeamService;
 import com.github.cshankland.extralife.service.UserService;
 import com.github.cshankland.extralife.util.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -16,6 +17,7 @@ public class ExtralifeServerResources extends ResourceConfig {
 
 		register(new DonationService(extraLife));
 		register(new UserService(extraLife));
+		register(new TeamService(extraLife));
 	}
 
 }

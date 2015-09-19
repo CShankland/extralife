@@ -2,6 +2,7 @@ package com.github.cshankland.extralife.extralife;
 
 import com.github.cshankland.extralife.http.HttpConnectionPool;
 import com.github.cshankland.extralife.model.Donation;
+import com.github.cshankland.extralife.model.TeamInfo;
 import com.github.cshankland.extralife.model.UserInfo;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -38,6 +39,8 @@ public class ExtraLife {
 	private static final String ACTION_PARAM = "fuseaction";
 	private static final String PROFILE_ACTION = "donorDrive.participant";
 	private static final String DONATION_ACTION = "donorDrive.participantDonations";
+	private static final String TEAM_ACTION = "donorDrive.teamParticipants";
+	private static final String JSONP_ACTION = "widgets.ajaxWidgetCompileHTML";
 
 	private final HttpConnectionPool httpPool;
 
@@ -61,6 +64,12 @@ public class ExtraLife {
 		URIBuilder builder = createBuilder(PROFILE_ACTION);
 		builder.setParameter("participantId", participantId);
 		return get(builder, null, UserInfo::new);
+	}
+
+	public CompletableFuture<TeamInfo> getTeamInfo(String teamId) {
+		URIBuilder builder = createBuilder(TEAM_ACTION);
+		builder.setParameter("teamId", teamId);
+		return get(builder, null, TeamInfo::new);
 	}
 
 	private <T> CompletableFuture<T> get(URIBuilder builder, T defaultValue, Function<Document, T> handler) {

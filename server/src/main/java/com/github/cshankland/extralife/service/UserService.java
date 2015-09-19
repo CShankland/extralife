@@ -28,13 +28,14 @@ public class UserService {
 	@Path("/users/{participantId}")
 	public void getDonations(@PathParam("participantId") String participantId, @Suspended AsyncResponse asyncResponse) {
 		extraLife.getUserInfo(participantId)
-				.whenComplete((donations, throwable) -> {
+				.whenComplete((userInfo, throwable) -> {
 					if (null != throwable) {
+						throwable.printStackTrace();
 						asyncResponse.resume(throwable);
 						return;
 					}
 
-					asyncResponse.resume(Response.ok(donations).build());
+					asyncResponse.resume(Response.ok(userInfo).build());
 				});
 	}
 }

@@ -15,27 +15,27 @@ import javax.ws.rs.core.Response;
  * Created by Chris on 9/19/15.
  */
 @Path("/")
-public class DonationService {
+public class TeamService {
 
 	private final ExtraLife extraLife;
 
-	public DonationService(ExtraLife extraLife) {
+	public TeamService(ExtraLife extraLife) {
 		this.extraLife = extraLife;
 	}
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	@Path("/donations/{participantId}")
-	public void getDonations(@PathParam("participantId") String participantId, @Suspended AsyncResponse asyncResponse) {
-		extraLife.getDonations(participantId)
-				.whenComplete((donations, throwable) -> {
+	@Path("/teams/{teamId}")
+	public void getDonations(@PathParam("teamId") String teamId, @Suspended AsyncResponse asyncResponse) {
+		extraLife.getTeamInfo(teamId)
+				.whenComplete((teamInfo, throwable) -> {
 					if (null != throwable) {
 						throwable.printStackTrace();
 						asyncResponse.resume(throwable);
 						return;
 					}
 
-					asyncResponse.resume(Response.ok(donations).build());
+					asyncResponse.resume(Response.ok(teamInfo).build());
 				});
 	}
 }
