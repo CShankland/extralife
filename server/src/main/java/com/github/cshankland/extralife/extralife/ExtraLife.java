@@ -2,6 +2,8 @@ package com.github.cshankland.extralife.extralife;
 
 import com.github.cshankland.extralife.http.HttpConnectionPool;
 import com.github.cshankland.extralife.model.Donation;
+import com.github.cshankland.extralife.model.UserInfo;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
@@ -17,6 +19,7 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -33,6 +36,7 @@ public class ExtraLife {
 	private static final String PATH ="/index.cfm";
 
 	private static final String ACTION_PARAM = "fuseaction";
+	private static final String PROFILE_ACTION = "donorDrive.participant";
 	private static final String DONATION_ACTION = "donorDrive.participantDonations";
 
 	private final HttpConnectionPool httpPool;
@@ -45,29 +49,39 @@ public class ExtraLife {
 		URIBuilder builder = createBuilder(DONATION_ACTION);
 		builder.setParameter("participantId", participantId);
 
+		return get(builder, Collections.emptyList(), (document -> {
+			Elements elements = document.getElementsByClass("donor-detail");
+			return elements.stream()
+					.map(Donation::new)
+					.collect(Collectors.toList());
+		}));
+	}
+
+	public CompletableFuture<UserInfo> getUserInfo(String participantId) {
+		URIBuilder builder = createBuilder(PROFILE_ACTION);
+		builder.setParameter("participantId", participantId);
+		return get(builder, null, UserInfo::new);
+	}
+
+	private <T> CompletableFuture<T> get(URIBuilder builder, T defaultValue, Function<Document, T> handler) {
 		try {
 			URI uri = builder.build();
 			HttpGet httpGet = new HttpGet(uri);
+
 			return httpPool.performRequest(httpGet)
 					.thenApply(response -> {
 						try {
 							String jsonString = EntityUtils.toString(response.getEntity());
 							Document document = Jsoup.parse(jsonString);
-
-							Elements elements = document.getElementsByClass("donor-detail");
-							System.out.println("Found " + elements.size() + " elements");
-							return elements.stream()
-									.map(Donation::new)
-									.collect(Collectors.toList());
-
-						} catch (IOException e) {
-							e.printStackTrace();
-							throw new RuntimeException(e);
+							return handler.apply(document);
+						} catch (IOException ioe) {
+							ioe.printStackTrace();
+							throw new RuntimeException(ioe);
 						}
 					});
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
-			return CompletableFuture.completedFuture(Collections.EMPTY_LIST);
+			return CompletableFuture.completedFuture(defaultValue);
 		}
 	}
 
