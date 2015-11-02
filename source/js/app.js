@@ -6,93 +6,126 @@ define(function(require, exports, module) {
 	var teamId = 20874;
 	var eventId = 525;
 
-	var notificationQueue = Promise.resolve(true);
-	function queueNotification(notificationHandler) {
-		notificationQueue.then(notificationHandler);
+	// Get our output elements
+	var totalDonationSpan = document.getElementById("total-donations");
+	var totalDonationEffectSpan = document.getElementById("total-donations-effects");
+	var latestDonationValueSpan = document.getElementById("latest-donation-value");
+	var latestDonationNameSpan = document.getElementById("latest-donation-name");
+
+	var baseAmountRaised = 1337.69;
+	var amountRaised = 1337.69;
+	var epsilon = 0.01;
+	var countupDuration = 2000;
+
+	function formatDonation(donation) {
+		return "$" + donation.toFixed(2).toLocaleString();
 	};
 
-	function $(sel) { return document.querySelector(sel); };
-
-	var container = $("#message-container");
-	var content = $("#message-content");
-
-	function createNotification(textColor, backgroundColor, message) {
-		return function notification() {
-			return new Promise(function resolver(resolve, reject) {
-				container.style.backgroundColor = backgroundColor;
-				content.style.color = textColor;
-				content.innerHTML = message;
-
-				setTimeout(resolve, 250);
-			})
-			.then(function nextStep() {
-				return new Promise(function resolver(resolve, reject) {
-					content.style.display = true;
-					setTimeout(function() {
-						content.style.fontSize = "60px";
-						setTimeout(resolve, 3250);
-					});
-				});
-			})
-			.then(function nextStep() {
-				return new Promise(function resolver(resolve, reject) {
-					content.style.fontSize = "10px";
-					setTimeout(resolve, 250);
-				});
-			})
-			.then(function finalStep() {
-				return new Promise(function resolver(resolve, reject) {
-					container.style.backgroundColor = "transparent";
-					content.style.display = false;
-
-					setTimeout(resolve, 250);
-				});
-			})
-		};
+	function updateTotalDonationLabel(value) {
+		totalDonationSpan.innerHTML = formatDonation(value);
 	};
 
-	var teamMembers = {};
-	function pollTeamMembers(delay) {
-		REST.get(serverRoot + "teams/" + teamId, { responseType: "json" })
-			.then(function handleMembers(teamInfo) {
-				var teamMembers = teamInfo.teamMembers;
-				teamMembers.forEach(function processMember(member) {
-					if (teamMembers[member.id]) {
-						return;
-					}
+	function showUpdateHighlight(value, resolver) {
+		var formattedValue = formatDonation(value);
+		totalDonationEffectSpan.innerHTML = formattedValue;
 
-					teamMembers[member.id] = {
-						name: member.name,
-						amount: member.amount
-					};
+		totalDonationEffectSpan.style.display = "block";
 
-					// onTeamMemberAdded(member.id);
-				});
-			})
-			.then(function wait() {
-				return new Promise(function resolver(resolve, reject) {
-					setTimeout(resolve, delay);
-				});
-			})
-			.then(function repeat() {
-				pollTeamMembers(delay);
-			});
+		// Lookup where we need to start from
+		var left = totalDonationSpan.parentNode.offsetLeft + 10;
+		var top = totalDonationSpan.parentNode.offsetTop + 9;
+
+		totalDonationEffectSpan.style.left = left + "px";
+		totalDonationEffectSpan.style.top = top + "px";
+		totalDonationEffectSpan.style.transition = "1s ease-out";
+		
+		setTimeout(function () {
+			totalDonationEffectSpan.style.transform = "scale(2, 2)";
+			totalDonationEffectSpan.style.opacity = 0;
+		}, 0);
+		setTimeout(function() {
+			totalDonationEffectSpan.style.display = "none";
+			totalDonationEffectSpan.style.opacity = 1;
+			totalDonationEffectSpan.style.transform = "";
+			totalDonationEffectSpan.style.transition = "";
+
+			setTimeout(resolver, 1200);
+		}, 1200);
 	};
 
-	REST.get(serverRoot + "teams/" + teamId, { responseType: "json" })
-		.then(function startTeamMemberWatch(results) {
-			var members = results.teamMembers;
-			members.forEach(function cacheMember(member) {
-				teamMembers[member.id] = {
-					name: member.name,
-					amount: member.amount
-				};
-			});
+	var animationHandle = null;
+	var boundUpdate = null;
+	var startTimestamp = null;
+	function updateTotalDonation(resolver, timestamp) {
+		if (null === startTimestamp) {
+			startTimestamp = timestamp;
+			window.requestAnimationFrame(boundUpdate);
+			return;
+		}
 
-			pollTeamMembers(500);
+		var dt = timestamp - startTimestamp;
+		var amountDelta = amountRaised - baseAmountRaised;
+		var t = dt / countupDuration;
 
+		if (t >= 1 || amountDelta <= epsilon) {
+			baseAmountRaised = amountRaised;
+			updateTotalDonationLabel(amountRaised);
+			showUpdateHighlight(amountRaised, resolver);
+			return;
+		}
+
+		var intermediateValue = baseAmountRaised + amountDelta * t;
+		updateTotalDonationLabel(intermediateValue);
+
+		animationHandle = window.requestAnimationFrame(boundUpdate);
+	};
+
+	function beginCountup(resolver) {
+		startTimestamp = null;
+		if (animationHandle) {
+			window.cancelAnimationFrame(animationHandle);
+		}
+
+		boundUpdate = updateTotalDonation.bind(null, resolver);
+		animationHandle = window.requestAnimationFrame(boundUpdate);
+	};
+
+	function rolloverDonation(name, value) {
+		return new Promise(function (resolve, reject) {
+			latestDonationValueSpan.style.opacity = 0;
+			latestDonationNameSpan.style.opacity = 0;
+
+			setTimeout(function() {
+				latestDonationValueSpan.innerHTML = formatDonation(value);
+				latestDonationNameSpan.innerHTML = name;
+
+				latestDonationValueSpan.style.opacity = 1;
+				latestDonationNameSpan.style.opacity = 1;
+
+				amountRaised += value;
+				return beginCountup(resolve);
+			}, 1200);
 		});
+	};
 
+	var donationIndex = 0;
+	var donations = [
+		{ name: "John Doe", value: 20 },
+		{ name: "Jane Doe", value: 10 },
+		{ name: "Cool Guy George", value: 500 }
+	];
+
+	function nextDonation() {
+		var donation = donations[donationIndex];
+		donationIndex = (donationIndex + 1) % donations.length;
+
+		return rolloverDonation(donation.name, donation.value)
+			.then(nextDonation);
+	};
+
+	nextDonation();
+
+/*
 	var donationsByUser = {};
 	function loadRecentDonations(id, skipNotify) {
 		return REST.get(serverRoot + "donations/" + id, { responseType: "json" })
@@ -110,9 +143,7 @@ define(function(require, exports, module) {
 					}
 				}
 			});
-	}
-
-	window.queueNotification = queueNotification;
-	window.createNotification = createNotification;
+	};
+*/
 
 });

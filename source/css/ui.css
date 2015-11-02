@@ -1,0 +1,49 @@
+@font-face {
+	font-family: Fairview-Regular;
+	src: url("../fonts/fairview-regular.otf") format("opentype");
+}
+
+@font-face {
+	font-family: Fairview-SmallCaps;
+	src: url("../fonts/fairview-smallcaps.otf") format("opentype");
+}
+
+.bvg-color {
+	background-color: transparent;
+}
+
+.bvg-font-color {
+	color: #F46939;
+}
+
+.heading {
+	font-family: 'Fairview-SmallCaps';
+	font-size: 35px;
+	padding-right: 10px;
+	padding-bottom: 6px;
+	vertical-align: bottom;
+	text-align: right;
+	color: #cccccc;
+}
+
+.value {
+	font-family: 'Fairview-Regular';
+	font-size: 60px;
+	text-align: left;
+	color: #F46939;
+}
+
+.inline {
+	display: inline-block;
+}
+
+.effects {
+	position: absolute;
+	display: none;
+	color: white;
+}
+
+.fade-out-enabled {
+	transition: 1s;
+	opacity: 1;
+}
