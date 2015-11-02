@@ -8,6 +8,10 @@
 	src: url("../fonts/fairview-smallcaps.otf") format("opentype");
 }
 
+html {
+	font-size: 50px;
+}
+
 .bvg-color {
 	background-color: transparent;
 }
@@ -18,19 +22,23 @@
 
 .heading {
 	font-family: 'Fairview-SmallCaps';
-	font-size: 35px;
+	font-size: 1rem;
 	padding-right: 10px;
-	padding-bottom: 6px;
-	vertical-align: bottom;
+	padding-top: 0.43rem;
+	vertical-align: top;
 	text-align: right;
 	color: #cccccc;
+	width: 4.5rem;
 }
 
 .value {
 	font-family: 'Fairview-Regular';
-	font-size: 60px;
+	font-size: 1.5rem;
 	text-align: left;
 	color: #F46939;
+	word-wrap: break-word; 
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .inline {

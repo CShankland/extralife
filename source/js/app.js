@@ -110,9 +110,10 @@ define(function(require, exports, module) {
 
 	var donationIndex = 0;
 	var donations = [
+		{ name: "KingArthurofTintagelBOOBS", value: 500 },
 		{ name: "John Doe", value: 20 },
-		{ name: "Jane Doe", value: 10 },
-		{ name: "Cool Guy George", value: 500 }
+		{ name: "Anonymous", value: 10 },
+		{ name: "King-Arthur-of-Tintagel", value: 500 }
 	];
 
 	function nextDonation() {
