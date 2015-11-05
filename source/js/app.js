@@ -2,7 +2,7 @@ define(function(require, exports, module) {
 
 	var REST = require("./util/REST");
 
-	var serverRoot = "http://slots-stage.bigvikinggames.com:7111/";
+	var serverRoot = "https://slots-stage-web.bigvikinggames.com/extralife-api/";
 	var teamId = 20874;
 	var eventId = 525;
 
