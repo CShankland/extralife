@@ -19,7 +19,13 @@ public class Donation {
 		String detail = element.getElementsByTag("strong").first().html();
 		System.out.println("Detail: " + detail);
 
-		name = detail.substring(0, detail.indexOf(" donated")).trim();
+		int donatedIndex = detail.indexOf(" donated");
+		if (-1 == donatedIndex) {
+			System.out.println("Unexpected detail: " + detail);
+			name = "Unknown";
+		} else {
+			name = detail.substring(0, donatedIndex).trim();
+		}
 
 		float amount;
 		try {

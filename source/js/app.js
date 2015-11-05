@@ -2,7 +2,7 @@ define(function(require, exports, module) {
 
 	var REST = require("./util/REST");
 
-	var serverRoot = "http://127.0.0.1:7100/";
+	var serverRoot = "http://slots-stage.bigvikinggames.com:7111/";
 	var teamId = 20874;
 	var eventId = 525;
 
@@ -12,8 +12,8 @@ define(function(require, exports, module) {
 	var latestDonationValueSpan = document.getElementById("latest-donation-value");
 	var latestDonationNameSpan = document.getElementById("latest-donation-name");
 
-	var baseAmountRaised = 1337.69;
-	var amountRaised = 1337.69;
+	var baseAmountRaised = 0;
+	var amountRaised = 0;
 	var epsilon = 0.01;
 	var countupDuration = 2000;
 
@@ -108,43 +108,68 @@ define(function(require, exports, module) {
 		});
 	};
 
-	var donationIndex = 0;
-	var donations = [
-		{ name: "KingArthurofTintagelBOOBS", value: 500 },
-		{ name: "John Doe", value: 20 },
-		{ name: "Anonymous", value: 10 },
-		{ name: "King-Arthur-of-Tintagel", value: 500 }
-	];
-
-	function nextDonation() {
-		var donation = donations[donationIndex];
-		donationIndex = (donationIndex + 1) % donations.length;
-
-		return rolloverDonation(donation.name, donation.value)
-			.then(nextDonation);
+	var updatePromise = Promise.resolve(true);
+	function queueDonation(name, value) {
+		updatePromise = updatePromise.then(rolloverDonation(name, value));
 	};
 
-	nextDonation();
-
-/*
 	var donationsByUser = {};
-	function loadRecentDonations(id, skipNotify) {
+	function checkRecentDonations(id) {
 		return REST.get(serverRoot + "donations/" + id, { responseType: "json" })
-			.then(function processDonations(results) {
-				var knownDonationCount = donationsByUser[id].length;
-				if (results.length === knownDonationCount) {
-					return;
-				}
+		    .then(function processDonations(results) {
+		    	if (! donationsByUser[id]) {
+		    		donationsByUser[id] = [];
+		    	}
 
-				for (var idx = knownDonationCount; idx < results.length; ++idx) {
-					donationsByUser[id].push(results[idx]);
-
-					if (! skipNotify) {
-						onDonationReceived(id, results[id]);
-					}
-				}
-			});
+		    	var knownDonations = donationsByUser[id];
+		    	for (var idx = knownDonations.length; idx < results.length; ++idx) {
+		    		var donation = results[idx];
+		    		queueDonation(donation.name, donation.amount);
+		    		knownDonations.push(donation);
+		    	}
+		    })
+		    .then(function pause() {
+		    	return new Promise(function resolver(resolve, reject) {
+		    		setTimeout(resolve, 60000);
+		    	});
+		    })
+		    .then(function checkAgain() {
+		    	return checkRecentDonations(id);
+		    });
 	};
-*/
 
+	REST.get(serverRoot + "teams/" + teamId, { responseType: "json" })
+	    .then(function beginCheckingForDonations(teamData) {
+	    	var members = teamData.teamMembers;
+
+	    	Promise.all(
+	    		members.map(function loadRecentDonations(teamMember) {
+	    			return REST.get(serverRoot + "donations/" + teamMember.id, { responseType: "json" });
+	    		})
+	    	).then(function processInitialResults(arrResults) {
+	    		var donations = [];
+	    		arrResults.forEach(function (result, idx) { 
+	    			donations = donations.concat(result);
+	    			donationsByUser[members[idx].id] = result;
+	    		});
+
+	    		donations.sort(function (a, b) { return a.date - b.date; });
+
+	    		donations.forEach(function countDonation(donation) { 
+	    			amountRaised += donation.amount;
+	    			baseAmountRaised += donation.amount;
+	    		});
+
+	    		var lastDonation = donations[donations.length - 1];
+	    		latestDonationValueSpan.innerHTML = formatDonation(lastDonation.amount);
+				latestDonationNameSpan.innerHTML = lastDonation.name;
+
+				updateTotalDonationLabel(baseAmountRaised);
+	    	})
+	    	.then(function beginPolling() {
+	    		members.forEach(function startPoll(teamMember, idx) {
+	    			setTimeout(checkRecentDonations.bind(null, teamMember.id), 30000 + idx * 5000);
+	    		});
+	    	});
+	    });
 });
